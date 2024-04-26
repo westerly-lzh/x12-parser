@@ -52,6 +52,7 @@ public class X12Reader {
     private static final String _X231_ANSI_VERSION = "005010X231A1";
     private static final String _X214_ANSI_VERSION = "005010X214";
     private static final String _X270_271_092_ANSI_VERSION = "004010X092A1";
+    private static final String _X270_271_279_ANSI_VERSION = "005010X279A1";
     private static final String _X212_ANSI_VERSION = "005010X212";
     private static final EnumMap<FileType, String> _TYPES = new EnumMap<>(FileType.class);
 
@@ -79,6 +80,7 @@ public class X12Reader {
         ANSI277_5010_X214("mapping/277.5010.X214.xml"),
         ANSI270_4010_X092("mapping/270.4010.X092.A1.xml"),
         ANSI271_4010_X092("mapping/271.4010.X092.A1.xml"),
+        ANSI271_5010_X279("mapping/271.5010.X279.A1.xml"),
         ANSI277_5010_X212("mapping/277.5010.X212.xml");
 
         private final String _mapping;
@@ -120,6 +122,7 @@ public class X12Reader {
         _TYPES.put(FileType.ANSI837_5010_X231, _X231_ANSI_VERSION);
         _TYPES.put(FileType.ANSI270_4010_X092, _X270_271_092_ANSI_VERSION);
         _TYPES.put(FileType.ANSI271_4010_X092, _X270_271_092_ANSI_VERSION);
+        _TYPES.put(FileType.ANSI271_5010_X279, _X270_271_279_ANSI_VERSION);
         _TYPES.put(FileType.ANSI277_5010_X212, _X212_ANSI_VERSION);
     }
 
@@ -247,6 +250,7 @@ public class X12Reader {
             while (scanner.hasNext()) {
                 // Determine if we have started a new loop
                 loopConfig = getMatchedLoop(_separators.splitElement(line), currentLoopConfig == null ? null : currentLoopConfig.getLoopId());
+                
                 if (loopConfig == null)
                     loopLines.add(line); // didn't start a new loop, just add the lines for the current loop
                 else {
@@ -712,13 +716,26 @@ public class X12Reader {
                         matchedLoops.add(config);
                 }
             }
-
+            
             if (matchedLoops.size() > 1) {
                 // starting a new loop but we aren't quite sure which one yet. Remove loops where the segment is known to be the last segment of that loop - clearly we aren't in a new loop then
-                matchedLoops = matchedLoops.stream().filter(lc -> lc.getLastSegmentXid() == null || !(lc.getLastSegmentXid().getXid().equals(tokens[0]) && codesValidatedForLoopId(tokens,
+            	if ("LE".equals(tokens[0])) {
+            		String parentLoopId = getParentLoop(previousLoopID, null);
+            		for (LoopConfig lc : matchedLoops) {
+            			if (lc.getLoopId().equals(parentLoopId)) {
+            				result = lc;
+            				break;
+            			}
+            		}
+            	}
+            	else {
+            		matchedLoops = matchedLoops.stream().filter(lc -> lc.getLastSegmentXid() == null || !(lc.getLastSegmentXid().getXid().equals(tokens[0]) && codesValidatedForLoopId(tokens,
                         lc.getLastSegmentXid()))).collect(
                         Collectors.toList());
-                result = matchedLoops.isEmpty() ? null : (matchedLoops.size() == 1 ? matchedLoops.get(0) : getFinalizedMatch(previousLoopID, matchedLoops));
+            		result = matchedLoops.isEmpty() ? null : (matchedLoops.size() == 1 ? matchedLoops.get(0) : getFinalizedMatch(previousLoopID, matchedLoops));
+            	}
+            	
+                
             }
             else if (matchedLoops.size() == 1)
                 result = matchedLoops.get(0);
@@ -791,13 +808,26 @@ public class X12Reader {
         String previousPos = null;
         for (String segment : segments) {
             int i = 0;
+            if (segment.startsWith("EB")) {
+            	//System.out.println("EB Segiment=" + segment);
+            }
             for (SegmentDefinition segmentConf : format) {
                 String[] tokens = separators.splitElement(segment);
+				
+				if (segment.equals("EB*C**42^67^AJ*MB**23*0") && tokens != null && tokens[0].equals("EB")) {
+					System.out.println("counting " + loopId + " EB segment=" + segment + ", segmentConf.getXid()=" + segmentConf.getXid()
+									+ ", codesValidated(tokens, segmentConf)=" + codesValidated(tokens, segmentConf));
+				}
+				 
+                
                 if (tokens != null && tokens[0].equals(segmentConf.getXid()) && codesValidated(tokens, segmentConf)) {
                     String currentPos = segmentConf.getPos();
-                    if (previousPos != null && Integer.parseInt(previousPos) > Integer.parseInt(currentPos))
-                        _errors.add("Segment " + segmentConf.getXid() + " in loop " + loopId + " is not in the correct position.");
-
+                    if (tokens[0].equals("EB")) {
+                    	//System.out.println("checking EB position...previousPos=" + previousPos + ", currentPos=" + currentPos);
+                    }
+                    if (previousPos != null && Integer.parseInt(previousPos) > Integer.parseInt(currentPos)) {
+                    	_errors.add("Segment " + segmentConf.getXid() + " in loop " + loopId + " is not in the correct position.");
+                    }
                     segmentCounter[i]++;
                     lineMatchesFormat = true;
                     previousPos = currentPos;
@@ -848,11 +878,20 @@ public class X12Reader {
         List<Integer> positions = new ArrayList<>(validCodes.values());
         List<List<String>> codes = new ArrayList<>(validCodes.keySet());
 
-        for (int i = 1; i < tokens.length; i++)
-            if (tokens[i] != null && !tokens[i].isEmpty() && positions.contains(i))
-                if (!codes.get(positions.indexOf(i)).contains(tokens[i]))
+        //System.out.println("codesValidated:::CP=88100:::tokens=" + String.join(",", tokens) + ", segementConfig.getXId()=" + segmentConf.getXid() + ", position=" + positions + ", codes=" + codes);
+        for (int i = 1; i < tokens.length; i++) {
+            if (tokens[i] != null && !tokens[i].isEmpty() && positions.contains(i)) {
+                if (!codes.get(positions.indexOf(i)).contains(tokens[i])) {
+                	if (tokens[0].equals("EB")) {
+                	System.out.println("codesValidated():::CP=88500:::positions.indexOf(" + i + ")=" + positions.indexOf(i));
+                	System.out.println("                   CP=88500:::codes.get(positions.indexOf(i))=" + codes.get(positions.indexOf(i)));
+                	System.out.println("                   CP=88500:::tokens[" + i + "]=" + tokens[i]);
+                	System.out.println("                   CP=88500:::returning false");
+                	}
                     return false;
-
+                }
+            }
+        }
         return true;
 
     }
@@ -870,8 +909,19 @@ public class X12Reader {
 
         for (int i = 0; i < format.size(); i++) {
             SegmentDefinition segmentConf = format.get(i);
+            if (segmentConf.getXid().equals("EB")) {
+            	System.out.println("segmentCounter[" + i + "]=" + segmentCounter[i]);
+            	if (segmentCounter[i] == 0) {
+            		System.out.println("X12Reader.validateSegments:::CP=90700:::Issue here: segmentCounter[" + i + "]=0");
+            	}
+            }
             if (!checkUsage(segmentConf.getUsage(), segmentCounter[i]) && !(segmentConf.getXid().equals("IEA") || segmentConf.getXid().equals("GE") || segmentConf.getXid().equals("SE")))
-                _errors.add(segmentConf.getXid() + " in loop " + loopId + " is required but not found");
+            {
+            	checkUsage(segmentConf.getUsage(), segmentCounter[i]);
+            	System.out.println("X12Reader.validateSegments():::CP=90900:::segments=" + String.join(",", segments) + ", in loop " + loopId + " is required but not found");
+            	System.out.println("X12Reader.validateSegments():::CP=90900:::" + segmentConf.getXid() + " in loop " + loopId + " is required but not found");
+            	_errors.add(segmentConf.getXid() + " in loop " + loopId + " is required but not found");
+            }
             if (!checkRepeats(segmentConf.getMaxUse(), segmentCounter[i]))
                 _errors.add(segmentConf.getXid() + " in loop " + loopId + " appears too many times");
             for (String s : segments) {

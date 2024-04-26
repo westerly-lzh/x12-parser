@@ -1,5 +1,12 @@
 package com.imsweb.x12.reader;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,25 +16,40 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.imsweb.x12.Element;
+import com.imsweb.x12.LineBreak;
 import com.imsweb.x12.Loop;
 import com.imsweb.x12.mapping.TransactionDefinition;
 import com.imsweb.x12.reader.X12Reader.FileType;
+import com.imsweb.x12.writer.X12Writer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-@SuppressWarnings({"java:S5961", "java:S5976"})
 class X12ReaderTest {
 
+    @Test
+    public void test271_5010() throws Exception {
+        URL url = this.getClass().getResource("/x270_271/x271.5010-01.txt");
+        File x12File = new File(url.getFile());
+        String x12Text = FileUtils.readFileToString(x12File, StandardCharsets.UTF_8);
+        X12Reader reader = new X12Reader(FileType.ANSI271_5010_X279, x12File);
+
+        List<Loop> loops = reader.getLoops();
+        assertEquals( 1, loops.size());
+
+        System.out.println("x12Text=" + x12Text.trim());
+        System.out.println("==================");
+        System.out.println("rewrite=" + new X12Writer(reader).toX12String(LineBreak.CRLF).trim());
+        
+        assertEquals(x12Text.trim(), new X12Writer(reader).toX12String(LineBreak.CRLF).trim());
+
+        assertTrue(reader.getFatalErrors().isEmpty() && reader.getErrors().isEmpty());
+    }
+	
+	
     @Test
     void testConstructors() throws IOException {
         URL url = this.getClass().getResource("/837_5010/x12_valid.txt");
@@ -1527,6 +1549,9 @@ class X12ReaderTest {
                 .getElement("EQ01");
         assertEquals("30", statusCodeElement.getSubValues().get(0));
     }
+    
+    
+
 
     @Test
     void test271() throws Exception {

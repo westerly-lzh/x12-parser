@@ -4330,10 +4330,10 @@
                             <seq>09</seq>
                           </element>
                         </segment>
-                        <!--End of III segment-->
+                                      <!--End of III segment-->
                       </loop>
-                      <!--End of 2115D loop-->
-                      <segment xid="LS">
+                                  <!--End of 2115D loop-->
+                                  <segment xid="LS">
                         <name>Dependent Eligibility or Benefit Information</name>
                         <usage>S</usage>
                         <pos>330</pos>
@@ -4348,8 +4348,8 @@
                           </valid_codes>
                         </element>
                       </segment>
-                      <!--End of LS segment-->
-                      <loop xid="2120D">
+                                  <!--End of LS segment-->
+                                  <loop xid="2120D">
                         <name>Dependent Benefit Related Entity Name</name>
                         <usage>S</usage>
                         <pos>340</pos>
@@ -4484,8 +4484,8 @@
                             <seq>02</seq>
                           </element>
                         </segment>
-                        <!--End of N3 segment-->
-                        <segment xid="N4">
+                                      <!--End of N3 segment-->
+                                      <segment xid="N4">
                           <name>Dependent Benefit Related Entity City/State/ZIP Code</name>
                           <usage>S</usage>
                           <pos>370</pos>
@@ -4532,8 +4532,8 @@
                             <seq>06</seq>
                           </element>
                         </segment>
-                        <!--End of N4 segment-->
-                        <segment xid="PER">
+                                      <!--End of N4 segment-->
+                                      <segment xid="PER">
                           <name>Dependent Benefit Related Entity Contact Information</name>
                           <usage>S</usage>
                           <pos>380</pos>
@@ -4619,8 +4619,8 @@
                             <seq>09</seq>
                           </element>
                         </segment>
-                        <!--End of PER segment-->
-                        <segment xid="PRV">
+                                      <!--End of PER segment-->
+                                      <segment xid="PRV">
                           <name>Dependent Benefit Related Provider Information</name>
                           <usage>S</usage>
                           <pos>390</pos>
