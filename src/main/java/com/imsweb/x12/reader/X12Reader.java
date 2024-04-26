@@ -808,23 +808,10 @@ public class X12Reader {
         String previousPos = null;
         for (String segment : segments) {
             int i = 0;
-            if (segment.startsWith("EB")) {
-            	//System.out.println("EB Segiment=" + segment);
-            }
             for (SegmentDefinition segmentConf : format) {
                 String[] tokens = separators.splitElement(segment);
-				
-				if (segment.equals("EB*C**42^67^AJ*MB**23*0") && tokens != null && tokens[0].equals("EB")) {
-					System.out.println("counting " + loopId + " EB segment=" + segment + ", segmentConf.getXid()=" + segmentConf.getXid()
-									+ ", codesValidated(tokens, segmentConf)=" + codesValidated(tokens, segmentConf));
-				}
-				 
-                
                 if (tokens != null && tokens[0].equals(segmentConf.getXid()) && codesValidated(tokens, segmentConf)) {
                     String currentPos = segmentConf.getPos();
-                    if (tokens[0].equals("EB")) {
-                    	//System.out.println("checking EB position...previousPos=" + previousPos + ", currentPos=" + currentPos);
-                    }
                     if (previousPos != null && Integer.parseInt(previousPos) > Integer.parseInt(currentPos)) {
                     	_errors.add("Segment " + segmentConf.getXid() + " in loop " + loopId + " is not in the correct position.");
                     }
@@ -878,16 +865,9 @@ public class X12Reader {
         List<Integer> positions = new ArrayList<>(validCodes.values());
         List<List<String>> codes = new ArrayList<>(validCodes.keySet());
 
-        //System.out.println("codesValidated:::CP=88100:::tokens=" + String.join(",", tokens) + ", segementConfig.getXId()=" + segmentConf.getXid() + ", position=" + positions + ", codes=" + codes);
         for (int i = 1; i < tokens.length; i++) {
             if (tokens[i] != null && !tokens[i].isEmpty() && positions.contains(i)) {
                 if (!codes.get(positions.indexOf(i)).contains(tokens[i])) {
-                	if (tokens[0].equals("EB")) {
-                	System.out.println("codesValidated():::CP=88500:::positions.indexOf(" + i + ")=" + positions.indexOf(i));
-                	System.out.println("                   CP=88500:::codes.get(positions.indexOf(i))=" + codes.get(positions.indexOf(i)));
-                	System.out.println("                   CP=88500:::tokens[" + i + "]=" + tokens[i]);
-                	System.out.println("                   CP=88500:::returning false");
-                	}
                     return false;
                 }
             }
@@ -910,16 +890,10 @@ public class X12Reader {
         for (int i = 0; i < format.size(); i++) {
             SegmentDefinition segmentConf = format.get(i);
             if (segmentConf.getXid().equals("EB")) {
-            	System.out.println("segmentCounter[" + i + "]=" + segmentCounter[i]);
-            	if (segmentCounter[i] == 0) {
-            		System.out.println("X12Reader.validateSegments:::CP=90700:::Issue here: segmentCounter[" + i + "]=0");
-            	}
             }
             if (!checkUsage(segmentConf.getUsage(), segmentCounter[i]) && !(segmentConf.getXid().equals("IEA") || segmentConf.getXid().equals("GE") || segmentConf.getXid().equals("SE")))
             {
             	checkUsage(segmentConf.getUsage(), segmentCounter[i]);
-            	System.out.println("X12Reader.validateSegments():::CP=90900:::segments=" + String.join(",", segments) + ", in loop " + loopId + " is required but not found");
-            	System.out.println("X12Reader.validateSegments():::CP=90900:::" + segmentConf.getXid() + " in loop " + loopId + " is required but not found");
             	_errors.add(segmentConf.getXid() + " in loop " + loopId + " is required but not found");
             }
             if (!checkRepeats(segmentConf.getMaxUse(), segmentCounter[i]))
