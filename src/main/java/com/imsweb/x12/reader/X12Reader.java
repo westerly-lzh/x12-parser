@@ -909,27 +909,14 @@ public class X12Reader {
 
         for (int i = 0; i < format.size(); i++) {
             SegmentDefinition segmentConf = format.get(i);
-            if (segmentConf.getXid().equals("EB")) {
-<<<<<<< HEAD
-            	//System.out.println("segmentCounter[" + i + "]=" + segmentCounter[i]);
-            	//if (segmentCounter[i] == 0) {
-            	//	System.out.println("X12Reader.validateSegments:::CP=90700:::Issue here: segmentCounter[" + i + "]=0");
-            	//}
-=======
->>>>>>> dfc6626611f43379c6faa9c60b8b3d2783f3a2db
-            }
             if (!checkUsage(segmentConf.getUsage(), segmentCounter[i]) && !(segmentConf.getXid().equals("IEA") || segmentConf.getXid().equals("GE") || segmentConf.getXid().equals("SE")))
             {
             	checkUsage(segmentConf.getUsage(), segmentCounter[i]);
-<<<<<<< HEAD
-            	//System.out.println("X12Reader.validateSegments():::CP=90900:::segments=" + String.join(",", segments) + ", in loop " + loopId + " is required but not found");
-            	//System.out.println("X12Reader.validateSegments():::CP=90900:::" + segmentConf.getXid() + " in loop " + loopId + " is required but not found");
-=======
->>>>>>> dfc6626611f43379c6faa9c60b8b3d2783f3a2db
             	_errors.add(segmentConf.getXid() + " in loop " + loopId + " is required but not found");
             }
             if (!checkRepeats(segmentConf.getMaxUse(), segmentCounter[i]))
                 _errors.add(segmentConf.getXid() + " in loop " + loopId + " appears too many times");
+            
             for (String s : segments) {
                 String[] tokens = separators.splitElement(s);
                 if (tokens != null && segmentCounter[i] > 0 && tokens[0].equals(segmentConf.getXid())) {
