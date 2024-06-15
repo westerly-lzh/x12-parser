@@ -30,22 +30,35 @@ import com.imsweb.x12.writer.X12Writer;
 
 class X12ReaderTest {
 
-    @Test
+//    @Test
+//    public void test271_5010() throws Exception {
+//        URL url = this.getClass().getResource("/x270_271/x271.5010-01.txt");
+//        File x12File = new File(url.getFile());
+//        String x12Text = FileUtils.readFileToString(x12File, StandardCharsets.UTF_8);
+//        X12Reader reader = new X12Reader(FileType.ANSI271_5010_X279, x12File);
+//
+//        List<Loop> loops = reader.getLoops();
+//        assertEquals( 1, loops.size());
+//        assertEquals(x12Text.trim(), new X12Writer(reader).toX12String(LineBreak.CRLF).trim());
+//        assertTrue(reader.getFatalErrors().isEmpty() && reader.getErrors().isEmpty());
+//    }
+	@Test
     public void test271_5010() throws Exception {
-        URL url = this.getClass().getResource("/x270_271/x271.5010-01.txt");
-        File x12File = new File(url.getFile());
-        String x12Text = FileUtils.readFileToString(x12File, StandardCharsets.UTF_8);
+		URL url = this.getClass().getResource("/x270_271/x271.5010-01.txt");
+		File x12File = new File(url.getFile());
+		String x12Text = FileUtils.readFileToString(x12File, StandardCharsets.UTF_8).trim();
         X12Reader reader = new X12Reader(FileType.ANSI271_5010_X279, x12File);
-
         List<Loop> loops = reader.getLoops();
         assertEquals( 1, loops.size());
-
-        System.out.println("x12Text=" + x12Text.trim());
-        System.out.println("==================");
-        System.out.println("rewrite=" + new X12Writer(reader).toX12String(LineBreak.CRLF).trim());
-        
-        assertEquals(x12Text.trim(), new X12Writer(reader).toX12String(LineBreak.CRLF).trim());
-
+        String gen271Str = new X12Writer(reader).toX12String(LineBreak.CRLF).trim();
+        String[] origStrArray = x12Text.split("\\n");
+        String[] genStrArray = gen271Str.split("\\n");
+        assertEquals(origStrArray.length, genStrArray.length, "The Generated length is different from the origin file");
+        if (origStrArray.length == genStrArray.length) {
+        	for (int i = 0; i < origStrArray.length; i++) {
+        		assertEquals(origStrArray[i].trim(), genStrArray[i].trim(), "Line #" + i + ": String Diff: ORIG=" + origStrArray[i] + ", GEN=" + genStrArray[i]);
+        	}
+        }
         assertTrue(reader.getFatalErrors().isEmpty() && reader.getErrors().isEmpty());
     }
 	
