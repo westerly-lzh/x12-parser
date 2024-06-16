@@ -811,15 +811,8 @@ public class X12Reader {
         String previousPos = null;
         for (String segment : segments) {
             int i = 0;
-<<<<<<< HEAD
-            
             for (SegmentDefinition segmentConf : format) {
                 String[] tokens = separators.splitElement(segment);
-                
-=======
-            for (SegmentDefinition segmentConf : format) {
-                String[] tokens = separators.splitElement(segment);
->>>>>>> dfc6626611f43379c6faa9c60b8b3d2783f3a2db
                 if (tokens != null && tokens[0].equals(segmentConf.getXid()) && codesValidated(tokens, segmentConf)) {
                     String currentPos = segmentConf.getPos();
                     if (previousPos != null && Integer.parseInt(previousPos) > Integer.parseInt(currentPos)) {
@@ -879,15 +872,13 @@ public class X12Reader {
         for (int i = 1; i < tokens.length; i++) {
             if (tokens[i] != null && !tokens[i].isEmpty() && positions.contains(i)) {
                 if (!codes.get(positions.indexOf(i)).contains(tokens[i])) {
-<<<<<<< HEAD
 //                	if (tokens[0].equals("NM1")) {
 //	                	System.out.println("codesValidated():::CP=88500:::positions.indexOf(" + i + ")=" + positions.indexOf(i));
 //	                	System.out.println("                   CP=88500:::codes.get(positions.indexOf(i))=" + codes.get(positions.indexOf(i)));
 //	                	System.out.println("                   CP=88500:::tokens[" + i + "]=" + tokens[i]);
 //	                	System.out.println("                   CP=88500:::returning false");
 //                	}
-=======
->>>>>>> dfc6626611f43379c6faa9c60b8b3d2783f3a2db
+
                     return false;
                 }
             }
