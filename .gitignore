@@ -8,4 +8,4 @@
 .dbshell
 .gradle
 /.settings
-.
+/.classpath
