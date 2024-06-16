@@ -36,7 +36,7 @@ import com.imsweb.x12.mapping.TransactionDefinition;
 import com.imsweb.x12.mapping.TransactionDefinition.Usage;
 
 public class X12Reader {
-
+	
     private static final int _ISA_LENGTH = 106;
     private static final int _ELEMENT_SEPARATOR_POS = 3; // array position
     private static final int _COMPOSITE_SEPARATOR_POS = 104; // array position
@@ -79,6 +79,7 @@ public class X12Reader {
         ANSI837_5010_X231("mapping/999.5010.xml"),
         ANSI277_5010_X214("mapping/277.5010.X214.xml"),
         ANSI270_4010_X092("mapping/270.4010.X092.A1.xml"),
+        ANSI270_5010_X279("mapping/270.5010.X279.A1.xml"),
         ANSI271_4010_X092("mapping/271.4010.X092.A1.xml"),
         ANSI271_5010_X279("mapping/271.5010.X279.A1.xml"),
         ANSI277_5010_X212("mapping/277.5010.X212.xml");
@@ -121,6 +122,7 @@ public class X12Reader {
         _TYPES.put(FileType.ANSI277_5010_X214, _X214_ANSI_VERSION);
         _TYPES.put(FileType.ANSI837_5010_X231, _X231_ANSI_VERSION);
         _TYPES.put(FileType.ANSI270_4010_X092, _X270_271_092_ANSI_VERSION);
+        _TYPES.put(FileType.ANSI270_5010_X279, _X270_271_279_ANSI_VERSION);
         _TYPES.put(FileType.ANSI271_4010_X092, _X270_271_092_ANSI_VERSION);
         _TYPES.put(FileType.ANSI271_5010_X279, _X270_271_279_ANSI_VERSION);
         _TYPES.put(FileType.ANSI277_5010_X212, _X212_ANSI_VERSION);
@@ -586,7 +588,7 @@ public class X12Reader {
 
     /**
      * Stores some data from the XML definition into a loop configuration object
-     * @param loop loop to be proceesed
+     * @param loop loop to be processed
      * @param parentID parent loop id of the loop being processed
      */
     private void getLoopConfiguration(LoopDefinition loop, String parentID) {
@@ -718,7 +720,8 @@ public class X12Reader {
             }
             
             if (matchedLoops.size() > 1) {
-                // starting a new loop but we aren't quite sure which one yet. Remove loops where the segment is known to be the last segment of that loop - clearly we aren't in a new loop then
+                // starting a new loop but we aren't quite sure which one yet. 
+            	// Remove loops where the segment is known to be the last segment of that loop - clearly we aren't in a new loop then
             	if ("LE".equals(tokens[0])) {
             		String parentLoopId = getParentLoop(previousLoopID, null);
             		for (LoopConfig lc : matchedLoops) {
@@ -808,13 +811,21 @@ public class X12Reader {
         String previousPos = null;
         for (String segment : segments) {
             int i = 0;
+<<<<<<< HEAD
+            
             for (SegmentDefinition segmentConf : format) {
                 String[] tokens = separators.splitElement(segment);
+                
+=======
+            for (SegmentDefinition segmentConf : format) {
+                String[] tokens = separators.splitElement(segment);
+>>>>>>> dfc6626611f43379c6faa9c60b8b3d2783f3a2db
                 if (tokens != null && tokens[0].equals(segmentConf.getXid()) && codesValidated(tokens, segmentConf)) {
                     String currentPos = segmentConf.getPos();
                     if (previousPos != null && Integer.parseInt(previousPos) > Integer.parseInt(currentPos)) {
                     	_errors.add("Segment " + segmentConf.getXid() + " in loop " + loopId + " is not in the correct position.");
                     }
+                    
                     segmentCounter[i]++;
                     lineMatchesFormat = true;
                     previousPos = currentPos;
@@ -826,7 +837,7 @@ public class X12Reader {
             }
 
             if (!lineMatchesFormat)
-                _errors.add("Unable to find a matching segment format in loop " + loopId);
+                _errors.add("Unable to find a matching segment format in loop " + loopId + ", Segment=" + segment);
             lineMatchesFormat = false;
         }
 
@@ -868,6 +879,15 @@ public class X12Reader {
         for (int i = 1; i < tokens.length; i++) {
             if (tokens[i] != null && !tokens[i].isEmpty() && positions.contains(i)) {
                 if (!codes.get(positions.indexOf(i)).contains(tokens[i])) {
+<<<<<<< HEAD
+//                	if (tokens[0].equals("NM1")) {
+//	                	System.out.println("codesValidated():::CP=88500:::positions.indexOf(" + i + ")=" + positions.indexOf(i));
+//	                	System.out.println("                   CP=88500:::codes.get(positions.indexOf(i))=" + codes.get(positions.indexOf(i)));
+//	                	System.out.println("                   CP=88500:::tokens[" + i + "]=" + tokens[i]);
+//	                	System.out.println("                   CP=88500:::returning false");
+//                	}
+=======
+>>>>>>> dfc6626611f43379c6faa9c60b8b3d2783f3a2db
                     return false;
                 }
             }
@@ -889,8 +909,6 @@ public class X12Reader {
 
         for (int i = 0; i < format.size(); i++) {
             SegmentDefinition segmentConf = format.get(i);
-            if (segmentConf.getXid().equals("EB")) {
-            }
             if (!checkUsage(segmentConf.getUsage(), segmentCounter[i]) && !(segmentConf.getXid().equals("IEA") || segmentConf.getXid().equals("GE") || segmentConf.getXid().equals("SE")))
             {
             	checkUsage(segmentConf.getUsage(), segmentCounter[i]);
@@ -898,6 +916,7 @@ public class X12Reader {
             }
             if (!checkRepeats(segmentConf.getMaxUse(), segmentCounter[i]))
                 _errors.add(segmentConf.getXid() + " in loop " + loopId + " appears too many times");
+            
             for (String s : segments) {
                 String[] tokens = separators.splitElement(s);
                 if (tokens != null && segmentCounter[i] > 0 && tokens[0].equals(segmentConf.getXid())) {
