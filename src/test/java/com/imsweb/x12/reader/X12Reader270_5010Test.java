@@ -35,6 +35,8 @@ public class X12Reader270_5010Test {
         //System.out.println("==================");
         String gen271Str = new X12Writer(reader).toX12String(LineBreak.CRLF).trim();
         
+        System.out.println("generated 271 Str=" + gen271Str);
+        
         //System.out.println("Orig Length: " + x12Text.length() + ", Gen Length: " + gen271Str.length());
         String[] origStrArray = x12Text.split("\\n");
         String[] genStrArray = gen271Str.split("\\n");
