@@ -51,6 +51,7 @@
 				<usage>R</usage>
 				<seq>05</seq>
 				<valid_codes>
+					<code>01</code>
 					<code>ZZ</code>
 				</valid_codes>
 			</element>

@@ -22,7 +22,8 @@ public class X12Reader271_5010Test {
     public void test271_5010() throws Exception {
 
 		
-		URL url = this.getClass().getResource("/x270_271/x271_dependent.txt");
+		//URL url = this.getClass().getResource("/x270_271/271-UNITEDHEAL-UNKNOWN_PAT.271");
+		URL url = this.getClass().getResource("/x270_271/x271_subscriber.txt");
 		File x12File = new File(url.getFile());
 		
 		String x12Text = FileUtils.readFileToString(x12File, StandardCharsets.UTF_8).trim();
