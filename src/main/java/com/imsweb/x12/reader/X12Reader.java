@@ -222,108 +222,108 @@ public class X12Reader {
      * @param reader reader
      */
     private void parse(Reader reader) throws IOException {
-        Scanner scanner = new Scanner(reader);
+        try (Scanner scanner = new Scanner(reader)) {
+			// set up delimiters
+			_separators = getSeparators(reader);
 
-        // set up delimiters
-        _separators = getSeparators(reader);
+			if (_separators != null && checkVersionsAreConsistent(_separators, reader)) {
+			    Character segmentSeparator = _separators.getSegment();
+			    String quotedSegmentSeparator = Pattern.quote(segmentSeparator.toString());
 
-        if (_separators != null && checkVersionsAreConsistent(_separators, reader)) {
-            Character segmentSeparator = _separators.getSegment();
-            String quotedSegmentSeparator = Pattern.quote(segmentSeparator.toString());
+			    // The following delimiter patterns will accept the segment delimiter with
+			    // optional line breaks.
+			    scanner.useDelimiter(quotedSegmentSeparator + "\r\n|" + quotedSegmentSeparator + "\n|" + quotedSegmentSeparator);
 
-            // The following delimiter patterns will accept the segment delimiter with
-            // optional line breaks.
-            scanner.useDelimiter(quotedSegmentSeparator + "\r\n|" + quotedSegmentSeparator + "\n|" + quotedSegmentSeparator);
+			    List<String> loopLines = new ArrayList<>(); // holds the lines from the claims files that all belong to the same loop
+			    LoopConfig loopConfig;
+			    LoopConfig currentLoopConfig = null;
+			    Loop lastLoopStored = null;
 
-            List<String> loopLines = new ArrayList<>(); // holds the lines from the claims files that all belong to the same loop
-            LoopConfig loopConfig;
-            LoopConfig currentLoopConfig = null;
-            Loop lastLoopStored = null;
+			    // parse _definition file
+			    _definition = _type.getDefinition();
 
-            // parse _definition file
-            _definition = _type.getDefinition();
+			    // cache definitions of loop starting segments
+			    getLoopConfiguration(_definition.getLoop(), null);
 
-            // cache definitions of loop starting segments
-            getLoopConfiguration(_definition.getLoop(), null);
+			    _errors = new ArrayList<>();
 
-            _errors = new ArrayList<>();
+			    String line = scanner.next().trim();
+			    while (scanner.hasNext()) {
+			        // Determine if we have started a new loop
+			        loopConfig = getMatchedLoop(_separators.splitElement(line), currentLoopConfig == null ? null : currentLoopConfig.getLoopId());
+			        
+			        if (loopConfig == null)
+			            loopLines.add(line); // didn't start a new loop, just add the lines for the current loop
+			        else {
+			            if (loopConfig.getLastSegmentXid() != null && line.startsWith(loopConfig.getLastSegmentXid().getXid()) && !loopConfig.equals(currentLoopConfig)) {
+			                lastLoopStored = appendEndingSegment(lastLoopStored, currentLoopConfig, loopConfig, _separators, line, loopLines);
+			                if (lastLoopStored != null) {
+			                    loopLines = new ArrayList<>();
+			                    currentLoopConfig = loopConfig;
+			                }
+			                else
+			                    break; // fatal error found when appending the segment
+			            }
+			            else if (loopConfig.getLoopId().equals(_definition.getLoop().getXid())) {
+			                // we are processing a new transaction - store any old data if necessary
+			                if (lastLoopStored != null && !loopLines.isEmpty()) {
+			                    if (storeData(currentLoopConfig, loopLines, lastLoopStored, _separators) == null)
+			                        break;
+			                    loopLines = new ArrayList<>();
+			                }
+			                currentLoopConfig = loopConfig;
+			                lastLoopStored = null;
+			                Loop loop = new Loop(null);
+			                loop.setSeparators(_separators);
+			                _dataLoops.add(loop);
+			                loopLines.add(line);
+			            }
+			            else {
+			                if (currentLoopConfig == null) {
+			                    _fatalErrors.add("Current loop is unknown. Bad structure detected");
+			                    break;
+			                }
+			                updateLoopCounts(loopConfig.getLoopId());
+			                // store the data from processing the last loop
+			                if (!loopLines.isEmpty())
+			                    lastLoopStored = storeData(currentLoopConfig, loopLines, lastLoopStored, _separators);
 
-            String line = scanner.next().trim();
-            while (scanner.hasNext()) {
-                // Determine if we have started a new loop
-                loopConfig = getMatchedLoop(_separators.splitElement(line), currentLoopConfig == null ? null : currentLoopConfig.getLoopId());
-                
-                if (loopConfig == null)
-                    loopLines.add(line); // didn't start a new loop, just add the lines for the current loop
-                else {
-                    if (loopConfig.getLastSegmentXid() != null && line.startsWith(loopConfig.getLastSegmentXid().getXid()) && !loopConfig.equals(currentLoopConfig)) {
-                        lastLoopStored = appendEndingSegment(lastLoopStored, currentLoopConfig, loopConfig, _separators, line, loopLines);
-                        if (lastLoopStored != null) {
-                            loopLines = new ArrayList<>();
-                            currentLoopConfig = loopConfig;
-                        }
-                        else
-                            break; // fatal error found when appending the segment
-                    }
-                    else if (loopConfig.getLoopId().equals(_definition.getLoop().getXid())) {
-                        // we are processing a new transaction - store any old data if necessary
-                        if (lastLoopStored != null && !loopLines.isEmpty()) {
-                            if (storeData(currentLoopConfig, loopLines, lastLoopStored, _separators) == null)
-                                break;
-                            loopLines = new ArrayList<>();
-                        }
-                        currentLoopConfig = loopConfig;
-                        lastLoopStored = null;
-                        Loop loop = new Loop(null);
-                        loop.setSeparators(_separators);
-                        _dataLoops.add(loop);
-                        loopLines.add(line);
-                    }
-                    else {
-                        if (currentLoopConfig == null) {
-                            _fatalErrors.add("Current loop is unknown. Bad structure detected");
-                            break;
-                        }
-                        updateLoopCounts(loopConfig.getLoopId());
-                        // store the data from processing the last loop
-                        if (!loopLines.isEmpty())
-                            lastLoopStored = storeData(currentLoopConfig, loopLines, lastLoopStored, _separators);
+			                if (lastLoopStored == null)
+			                    break; // fatal error recorded during storing the loop
 
-                        if (lastLoopStored == null)
-                            break; // fatal error recorded during storing the loop
+			                // start processing the new loop we found
+			                loopLines = new ArrayList<>();
+			                loopLines.add(line);
+			                currentLoopConfig = loopConfig;
+			            }
+			        }
 
-                        // start processing the new loop we found
-                        loopLines = new ArrayList<>();
-                        loopLines.add(line);
-                        currentLoopConfig = loopConfig;
-                    }
-                }
+			        try {
+			            line = scanner.next().trim();
+			        }
+			        catch (NoSuchElementException e) {
+			            // break out of the loop, we have apparently hit the end of the file
+			            break;
+			        }
+			    }
 
-                try {
-                    line = scanner.next().trim();
-                }
-                catch (NoSuchElementException e) {
-                    // break out of the loop, we have apparently hit the end of the file
-                    break;
-                }
-            }
-
-            // store the final segment if the last line of the file has data.
-            if (!line.isEmpty() && _fatalErrors.isEmpty()) {
-                if (currentLoopConfig != null) {
-                    loopConfig = getMatchedLoop(_separators.splitElement(line), currentLoopConfig.getLoopId());
-                    lastLoopStored = appendEndingSegment(lastLoopStored, currentLoopConfig, loopConfig, _separators, line, loopLines);
-                    if (lastLoopStored == null || !_definition.getLoop().getXid().equals(lastLoopStored.getId()))
-                        _fatalErrors.add("Unable to find end of transaction");
-                }
-                else
-                    _fatalErrors.add("Last line of data and we don't know the current loop.");
-            }
-            if (_fatalErrors.isEmpty())
-                checkLoopErrors();
-        }
-        else
-            _fatalErrors.add("Unable to process transaction!");
+			    // store the final segment if the last line of the file has data.
+			    if (!line.isEmpty() && _fatalErrors.isEmpty()) {
+			        if (currentLoopConfig != null) {
+			            loopConfig = getMatchedLoop(_separators.splitElement(line), currentLoopConfig.getLoopId());
+			            lastLoopStored = appendEndingSegment(lastLoopStored, currentLoopConfig, loopConfig, _separators, line, loopLines);
+			            if (lastLoopStored == null || !_definition.getLoop().getXid().equals(lastLoopStored.getId()))
+			                _fatalErrors.add("Unable to find end of transaction");
+			        }
+			        else
+			            _fatalErrors.add("Last line of data and we don't know the current loop.");
+			    }
+			    if (_fatalErrors.isEmpty())
+			        checkLoopErrors();
+			}
+			else
+			    _fatalErrors.add("Unable to process transaction!");
+		}
     }
 
     /**
